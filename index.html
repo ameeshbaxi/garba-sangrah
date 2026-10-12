@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ગરબા સંગ્રહ | Garba Reader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Gujarati:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fcf9f2;
+      --card-bg: #ffffff;
+      --text-main: #2b2118;
+      --text-muted: #73675a;
+      --accent-saffron: #b33909;
+      --accent-gold: #c28833;
+      --border: #eadfce;
+      --font-size: 1.35rem;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Fixed Top Navigation */
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(252, 249, 242, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .brand h1 {
+      font-family: 'Noto Serif Gujarati', serif;
+      font-size: 1.3rem;
+      color: var(--accent-saffron);
+      font-weight: 700;
+    }
+
+    .brand span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    select, input, button {
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-main);
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent-saffron);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s ease;
+    }
+
+    button:hover { background: #f3ece0; }
+
+    button.active {
+      background: var(--accent-saffron);
+      color: #fff;
+      border-color: var(--accent-saffron);
+    }
+
+    /* Reading Container */
+    main {
+      flex: 1;
+      max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem 1.5rem;
+    }
+
+    .song-header {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--border);
+      text-align: center;
+    }
+
+    .song-badge {
+      display: inline-block;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent-gold);
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .song-title {
+      font-family: 'Noto Serif Gujarati', serif;
+      font-size: 1.85rem;
+      color: var(--accent-saffron);
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .song-lyrics {
+      font-family: 'Noto Serif Gujarati', serif;
+      font-size: var(--font-size);
+      line-height: 2.1;
+      white-space: pre-wrap;
+      color: var(--text-main);
+      text-align: left;
+    }
+
+    /* Bottom quick navigation */
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      .toolbar { width: 100%; justify-content: space-between; }
+      select { flex: 1; }
+      .song-lyrics { font-size: calc(var(--font-size) * 0.95); line-height: 2; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <h1>ગરબા સંગ્રહ</h1>
+      <span>Garba Sangrah</span>
+    </div>
+
+    <div class="toolbar">
+      <select id="songSelect" onchange="loadSong(parseInt(this.value))">
+        <!-- Injected via JavaScript -->
+      </select>
+
+      <button onclick="changeFontSize(-0.1)" title="Decrease text size">A−</button>
+      <button onclick="changeFontSize(0.1)" title="Increase text size">A+</button>
+      <button id="scrollBtn" onclick="toggleAutoScroll()">📜 Auto-Scroll</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="song-header">
+      <span class="song-badge" id="songCounter">૧ / ૧૨</span>
+      <h2 class="song-title" id="displayTitle"></h2>
+    </div>
+
+    <article class="song-lyrics" id="displayLyrics"></article>
+
+    <div class="nav-buttons">
+      <button onclick="navPrev()">← પાછળ (Prev)</button>
+      <button onclick="navNext()">આગળ (Next) →</button>
+    </div>
+  </main>
+
+  <script>
+    const garbaList = [
+      {
+        id: 1,
+        title: "ગરબો ૧: હૃદય ની શુદ્ધ પાટી માં",
+        lyrics: `હૃદય ની શુદ્ધ પાટી માં ઘૂટું છું એક માં માં માં \nબીજું કંઇ ઘૂંટવાનું કહો તો કહું છું હું સાફ ના ના ના....... હૃદય ની \n\nસરસ એ શુદ્ધ પાટી ને મેં રાખી દિલ તણા દફતર\nબીજું કંઇ રાખવાનું કહો તો કહું છું હું સાફ ના ના ના...... હૃદય ની \n\nલૂછે છે આંખ ના આંસુ પડે જો ડાધ પાટી માં \nબીજું કંઇ લૂછવાનું કહો તો કહું છું હું સાફ ના ના ના ...... હૃદય ની\n\nકલાપી માં લીલા લ્હેકે કલાપી માં કૃપા વરસે \nકલાપી માં કૃપા વરસે લખું છું એક માં માં માં. ......... હૃદયની`
+      },
+      {
+        id: 2,
+        title: "ગરબો ૨: આવો ને આપું ઉરમાં ઉતારા",
+        lyrics: `આવો ને આપું ઉરમાં ઉતારા,\nપાઓ ને પાઓ પ્રેમ પિયૂષ ધારા ....(2)\n\nભજનો ગાતા તુજ ભણકારા \nરાસે રાસે તુજ રણકારા\nઆવો ને નયને તુજ શણગારા \nપાઓ ને પાઓ પ્રેમ પિયૂષ ધારા ..... આવો ને (૧)\n\nપ્રેમલ પૂજન પ્રેમ પસારા \nજાગે જાગે જ્યોતિ ગબારા \nઆવો ને આપો એ રસ ધારા\nપાઓ ને પાઓ પ્રેમ પિયૂષ ધારા ..... આવો ને (૨}\n\nમાઈ મંદિર માં બાંધ્યા મિનારા \nઆ ફૂલવાડી ઉડે છે ફૂવારા\nઆવો ને મારા મનના સિતારા \nપાઓ ને પાઓ પ્રેમ પિયૂષ ધારા ......આવો ને (૩)\n\nનાચું નાચું પ્રેમે તારા \nકલાપી કરતાલે કરતાલા \nડગલે ને પગલે સુખને સહારા \nપાઓ ને પાઓ પ્રેમ પિયૂષ ધારા ...... આવો ને (૪)`
+      },
+      {
+        id: 3,
+        title: "ગરબો ૩: એકવાર બોલો માજી બોલો",
+        lyrics: `એકવાર બોલો માજી બોલો \n              બાલ તમારા બોલાવે......... એકવાર (૧)\nમીઠું મીઠું બોલો, માજી બોલો \n                બાલ તમારા બોલાવે........ એકવાર (૨)\n\nઅંબે માં પ્યારા લાગો છો વ્હાલા \n         કરગરતો કરું કાલાવાલા \n          ચક્ષુ અશ્રુથી ભીંજાએ .......... એકવાર (૩)\n\nવાંક બાળકના માં ન સંભારો\n          શરણાગત આ છોરું સંભાળો\n           દિલમાં કંઈ કંઈ થાએ ........... એકવાર (૪)\n\nબોલો રે બોલો કંઈક તો બોલો \n             પ્રેમ ધરી માં દિલડું ખોલો\n              ભક્ત આ કેમ ભુલાયે .......... એકવાર (૫)`
+      },
+      {
+        id: 4,
+        title: "ગરબો ૪: મંગળ વરસે મંગળ વરસે",
+        lyrics: `મંગળ વરસે મંગળ વરસે આજ માં ને મંદિરયે \nજય જય અંબે, જય જય અંબે, \nજય જય અંબે ધૂન લાગી અલખની \n\nદેવને દીપાવતી , વિશ્વને ઉજાળતી,\nરજની ને રમાડતી, સજની ને શણગારતી\nદૈવી દિપમાળ પ્રગટે....આજ માં ને મંદિરયે \nદિવડા ઝળકે (૨) દિવડા પ્રગટે આજ માં ને મંદિરયે.....મંગળ (૧)\n\nસ્વર્ગ સરસ લાગતી, માજીને દિપાવલી,\nસરસ સરસ લાગતી , માજી ને દિપાવતી \nપુષ્પતણી માળા લટકે......આજ માં ને મંદિરયે \nફૂલડાં મ્હેકે, ફૂલડાં ફરકે, ફૂલડાં લટકે આજ માં ને મંદિરયે...મંગળ ૨\n\nઆદી શ્રી અંબિકા, બાલા શ્રી બહુચરા,\nતુલજા તિલોત્તમા, ચતુરા શ્રી અંતરા\nપગલે પ્રગટ પંડે......આ જ માં ને મંદિરયે \nઅંબા મલકે, બાલા અટકે, લલિતા લ્હેકે આજ માં ને મંદિરયે... મંગળ (૩)\n\nભાવને ભીંજાવતી, અંતર ઉછાળતી,\nકલિકાલે કિંમતી, અમૃત ને સીંચતી \nકુમકુમ ની વર્ષા વરસે.....આજ માં ને મંદિરયે \nકુમકુમ બહેકે, કુમકુમ લ્હેકે, કુમકુમ ઉડે આજ માં ને મંદિરયે.... મંગળ (૪)`
+      },
+      {
+        id: 5,
+        title: "ગરબો ૫: આંખડી અધીર મારી આંખડી અધીર",
+        lyrics: `આંખડી અધીર મારી આંખડી અધીર \nદર્શન કરવા ને મારી આંખડી અધીર \n\nમનડું મોહ્યું છે માડી તારા મંદિરીયે \nરહેતી નથી રે મારા મનડાની ધીર.... દર્શન કરવા (૧)\n\nડગલે ને પગલે શ્યામા તુજને સંભારુ \nશીદને ગુમાવુ માં હૈયાનું હીર.......... દર્શન કરવા (૨)\n\nદર્શન ને કાજે હું તો ભટકું છું વાટમાં \nઅંબાના ધામ કેરું વાગ્યું છે તીર....... દર્શન કરવા (૩)\n\nરોમે રોમે અંબા ભણકારા વાગતા\nરમી રહ્યા છો મારા મનના મંદિર........ દર્શન કરવા (૪)\n\nચિતડું ચોંટ્યું છે માડી તારા ગુણગાનમાં \nભાંગજે સદા તારા ભક્તોની ભીડ...... દર્શન કરવા (૫)\n\nબાળક નાનો વારી વારી વિનવે\nજપતાં જીભે અંબા છોડુ શરીર.......... દર્શન કરવા (૬)`
+      },
+      {
+        id: 6,
+        title: "ગરબો ૬: ઢોલીડા ઢોલ ધીમો ધીમો વગાડના",
+        lyrics: `ઢોલીડા ઢોલ ધીમો, ધીમો વગાડના \nરઢીયાળી રાતનો જો જે રંગ જાયના\nધ્રુજેના ધરતી તો રમઝટ કહેવાય ના \nઆઠમની રાતડીને આંખડી ઘેરાયના..... ઢોલીડા (૧)\n\nચમકતી ચાલ માંને ઘુઘરી ધમકાર \nનેપૂરના નાદ સાથે તાલીઓના તાલ\nગરબામાં ઘૂમતા માંને કોઈથી પહોચાયના \nરઢીયાળી રાતનો જો જે રંગ જાયના...... ઢોલીડા (૨)\n\nવાંકડીયા વાળ શોભે કેશ કલાપ\nમોગરાની વેણીમાં શોભે ગુલાબ \nઆછી આછી ઓઢણીમાં રૂપ સમાયના\nરઢીયાળી રાતનો જો જે રંગ જાયના....... ઢોલીડા (૩)\n\nસોળે શણગાર સજી અવની પર આજ\nરમવાને રાસ આવ્યા અલબેલી માત\nનીરખુ નીરખુ ને મારુ મનડું ધરાય ના\nરઢીયાળી રાતનો જો જે રંગ જાયના........ ઢોલીડા (૪)\n\nમોતી વેરાણા આજ ચાંચર ને ચોક \nઉમટ્યા સહુ ભક્તો આજ ગબ્બર નાં ગોખ\nવીણુ વીણુ ને મારી છાબડીમાં માયના \nરઢીયાળી રાતનો જો જે રંગ જાયના......... ઢોલીડા (૫)\n\nમાઝમની રાતે માએ અમૃત વરસાવીયા \nપ્રેમી બાલુડા ને પ્રેમે ભીંજાવીયા \nભૂલું ભૂલું તોયે ભૂલ્યું ભૂલાયના\nરઢીયાળી રાતનો જો જે રંગ જાયના.......... ઢોલીડા (૬)\n\nરાત વીતી ગઈ, વાતો પણ ગઈ\nજીતુ ના દિલડાનો રંગ રંગી ગઈ\nરંગ એવો લાગ્યો કે ધોયો ધોવાયના \nરઢીયાળી રાતનો જો જે રંગ જાયના.......... ઢોલીડા (૭)`
+      },
+      {
+        id: 7,
+        title: "ગરબો ૭: વંદન દેવી અંબા ભવાની",
+        lyrics: `વંદન દેવી અંબા ભવાની \nઅંબા ભવાની શિવા કલ્યાણી ...... વંદન (૧)\n\nનિશુંભ માર્યો શુભ સંહાર્યો \nહેમાદ્રિ તનયા ચંડી રુદ્રાણી ......... વંદન (૨)\n\nઅનેક રૂપા શક્તિ અનુપા\nમાહેશ્વરી માતા ગૌરી તું શાણી ....... વંદન (૩)\n\nશિવ પ્રિયા છો કાલી કરાલી \nમાત દુલારી ત્રિશુલ પાણી ............ વંદન (૪)\n\nજગત જનની દુર્ગા દયાળી \nઉમા અપર્ણા ગિરિજા મૃડાણી ......... વંદન (૫)\n\nસ્નેહે નિહાળી પાળો શિશુને \nઆપો ઉદય જય અંબા ભવાની ....... વંદન (૬)`
+      },
+      {
+        id: 8,
+        title: "ગરબો ૮: હાથ રહે ના હૈયું મારું",
+        lyrics: `હાથ રહે ના હૈયું મારું ગૌરીના ગરબા ગાઉં \nપરમાનંદ એ હૈયું ઉછળે મન સાગર ઉર્મિ થી છલકે\nગરબે ગરબે ગુંજન માં નું ગૌરી ના ગરબા ગાઉં ......... હાથ (૧)\n\nપ્રેમ સરોવર પ્રેમ કી નદીયાં અંતર ઉછળે પ્રેમ કી બુન્દીયા \nગરબે ગરબે દર્શન માં નું ગૌરી ના ગરબા ગાઉં............ હાથ (૨)\n\nદિલમાં કંઈ કંઈ થનગન થાએ ભાવભર્યા હિલોળા ખાયે\nગરબે ગરબે પૂજન માં નું ગૌરી ના ગરબા ગાઉં ........... હાથ (૩)\n\nશબ્દે શબ્દે નામ છે માં નું માં વિનાનું ગાવું નકામું \nગરબે ગરબે સ્મરણ માં નું ગૌરી ના ગરબા ગાઉં .......... હાથ (૪)`
+      },
+      {
+        id: 9,
+        title: "ગરબો ૯: લઈને સંદેશો મારો",
+        lyrics: `લઈને સંદેશો મારો અંબા ના દેશમાં \nજાજે મુરલિયા, જાજે મોરલીયા .............. લઈને સંદેશો (૧)\n\nઅંબા ના દેશમાં, ઉંચા નીચા ડુંગરા \nડુંગરા માં ગબ્બર ગોખે જાજે મોરલીયા..... લઈને સંદેશો (૨)\n\nગબ્બર નાં ગોખે ઉડજે મીઠા ટહુકારા કરજે \nગબ્બર આપે તે ચણજે મીઠા મોરલીયા ........ લઈને સંદેશો (૩)\n\nગબ્બર નાં ગોખમાં ઉંચા નીચા ઝાડવા \nટોચે પારસ ને પીપળે જાજે મોરલીયા .......... લઈને સંદેશો (૪)\n\nપીપળાને ફેરા ફરજે મીઠા ટહુકારા કરજે \nનેહેથી નીચો નમજે માંના ચરણમાં ............ લઈને સંદેશો (૫)\n\nપીપળાથી નીચે નીચે દેવો જ્યાં અમૃત સીંચે \nમાજીના દર્શન કરજે ખાટે હિચકતા ........... લઈને સંદેશો (૬)\n\nપહેલાં તું વંદન કરજે મારો સંદેશો કહેજે \nઆટલડુ માં ને કહેજે ઝંખે બાળકડા ............. લઈને સંદેશો (૭)\n\nમાઈ કલાપી માડી ઓઢીને પ્રેમલ સાડી \nઝંખે છે દાડી દાડી કહેજે મોરલીયા ............. લઈને સંદેશો (૮)`
+      },
+      {
+        id: 10,
+        title: "ગરબો ૧૦: માડી તારું કંકુ ખર્યું ને સુરજ ઊગ્યો",
+        lyrics: `માડી તારું કંકુ ખર્યું ને સુરજ ઊગ્યો...(૨)\nજગત માથે જાણે રે પ્રભુતા એ પગ મૂક્યો \nકંકુ ખર્યું ને સૂરજ ઊગ્યો.... માડી તારું કંકુ...\n\nમંદિર સર્જાયુ ને ઘંટારવ ગાજ્યો ......(૨)\nનભનો ચંદરવો માંએ આંખ્યુંમાં આંજ્યો...(૨)\nદિવો થાવા મંદિરનો ચાંદો આવી પૂગ્યો \nકંકુ ખર્યું ને સૂરજ ઊગ્યો....માડી તારું કંકુ...૨)\n\nમાવડીના રથના ઘુઘરાઓ બોલ્યા....(૨)\nઅજવાળી રાતે માં અમૃત ઢોળ્યાં.....(૨)\nગગનનો ગરબો માં ના ચરણોમાં મૂક્યો \nકંકુ ખર્યું ને સૂરજ ઊગ્યો..... માડી તારું કંકુ...\n\nમાવડી ની કોટમાં તારા ને મોતી.....(૨)\nજનનીની આંખ્યુંમાં પૂનમની જ્યોતિ...(૨)\nછડી રે પુકારી માંનો મોરલો ટહુકો\nકંકુ ખર્યું ને સૂરજ ઊગ્યો... માડી તારું કંકુ...`
+      },
+      {
+        id: 11,
+        title: "ગરબો ૧૧: માડી તારો હિંડોળો ઝાકમઝોળ",
+        lyrics: `માડી તારો હિંડોળો ઝાકમઝોળ\nગોખ ગબ્બર ના ડુંગરે બાંધ્યો\nબાંધ્યો સોનાનો ઢોળ \n\nમાની મુક્તા ને મોટી મઢેલો\nહીરલા રતન ની કોર\nમાડી તારો હિંડોળો ઝાકમઝોળ\n\nકાંગરે કાંગરે પોપટ ટહુકે\nટહુકે કળા કરી મોર\nમાડી તારો હિંડોળો ઝાકમઝોળ\n\nસોળ સરસ શણગાર સજી ને\nઝૂલે બહુચર અંબે જોડ\nમાડી તારો હિંડોળો ઝાકમઝોળ\n\nઅંતર ની ઈચ્છા મમ મારી\nઝુલાવી તમને રોજ\nમાડી તારો હિંડોળો ઝાકમઝોળ\n\nકાંગરે કાગર પોપટ ટહુકે\nટહુકે કળા કરી મોર\nમાડી તારો હિંડોળો ઝાકમઝોળ`
+      },
+      {
+        id: 12,
+        title: "સ્તુતિ: વિશ્વંભરી અખિલ વિશ્વ તણી જનેતા",
+        lyrics: `વિશ્વંભરી અખિલ વિશ્વ તણી જનેતા,\nવિદ્યા ધરી વદનમાં વસજો વિધાતા,\nદુર્બુદ્ધિને દૂર કરી સદ્ બુદ્ધિ આપો,\n મામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો .......(૧)\n\nભુલો પડી ભવરેણ ભટકું ભવાનિ,\nસુઝે નહિ લગીર કોઇ દિશા જવાની \nભાસે ભયંકર વળી મનમાં ઉતાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૨)\n\nઆ રંકને ઉગરવા નથી કોઈ આરો,\nજન્માંન્ધ છું જનની હું ગ્રહી બાય તારો \nના શું સુણો ભગવતી શિશુના વિલાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૩)\n\nમાં કર્મ જન્મ કથની કરતાં વિચારૂં,\nઆ સૃષ્ટિમાં તુજ વિના નથી કોઇ મારૂં,\nકોને કહું કઠણ યોગ તણો બળાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૪)\n\nહું કામ ક્રોધ મદ મોહ થકી છકેલો,\nઆડંબરે અતિ ઘણો મદથી બકેલો.\nદોષો થકી દુષિતના કરી માફ આપો \nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૫)\n\nના શાસ્ત્રના શ્રવણનું પયપાન પીધું,\nના મંત્ર કે સ્તુતિ કથા કદી કાંઈ કીધું. \nશ્રદ્ધા ધરી નથી કર્યા તવ નામ જાપો.\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો....... (૬)\n\nરેરે ભવાની બહુ ભુલ થઈ જ મારી,\nઆ જીન્દગી થઈ મને અતિશે અકારી \nદોષો પ્રજાળી સઘળા તવ છાપ છાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૭)\n\nખાલી ન કોઇ સ્થળ છે વિણ આપ ધારો,\nબ્રહ્માંડમાં અણું અણું મહીં વાસ તારો \nશક્તિ ન માપ ગણવા અગણિત માપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૮)\n\nપાપે પ્રપંચ કરવા બધી વાતે પૂરો,\nખોટો ખરો ભગવતી પણ હું તમારો \nજાડયાન્ધકાર દૂર કરી સદ્ બુદ્ધિ આપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો.......(૯)\n\nશ્રી સદ્ ગુરુના શરણમાં રહીને યજુ છું,\nરાત્રિ દિને ભગવતી તુજને ભજું છું.\nસદ્ ભક્ત સેવક તણાં પરિતાપ કાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો......(૧૦)\n\nશીખે સુણે ભગવતી સ્તુતિ એક ચિત્તે,\nતેના થકી ત્રિવિધ તાપ ટળે ખચિતે.\nવાઘે વિશેષ વળી અંબા તણા પ્રતાપે,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો......(૧૧)\n\nઅંતર વિષે અધિક ઉર્મિ થતાં ભવાનિ,\nગાઉં સ્તુતિ તવ બળે નમીને મૃડાની.\nસંસારના સકળ રોગ સમૂળ કાપો,\nમામ્ પાહિૐ ભગવતિ ! ભવ દુઃખ કાપો......(૧૨)`
+      }
+    ];
+
+    let currentIndex = 0;
+    let currentFontSize = 1.35;
+    let scrollInterval = null;
+
+    const selectEl = document.getElementById('songSelect');
+
+    // Populate dropdown
+    garbaList.forEach((song, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = song.title;
+      selectEl.appendChild(opt);
+    });
+
+    function loadSong(index) {
+      currentIndex = index;
+      selectEl.value = index;
+      document.getElementById('songCounter').textContent = `${index + 1} / ${garbaList.length}`;
+      document.getElementById('displayTitle').textContent = garbaList[index].title;
+      document.getElementById('displayLyrics').textContent = garbaList[index].lyrics;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function navPrev() {
+      if (currentIndex > 0) loadSong(currentIndex - 1);
+    }
+
+    function navNext() {
+      if (currentIndex < garbaList.length - 1) loadSong(currentIndex + 1);
+    }
+
+    function changeFontSize(delta) {
+      currentFontSize = Math.max(1.0, Math.min(2.2, currentFontSize + delta));
+      document.documentElement.style.setProperty('--font-size', `${currentFontSize}rem`);
+    }
+
+    function toggleAutoScroll() {
+      const btn = document.getElementById('scrollBtn');
+      if (scrollInterval) {
+        clearInterval(scrollInterval);
+        scrollInterval = null;
+        btn.classList.remove('active');
+      } else {
+        btn.classList.add('active');
+        scrollInterval = setInterval(() => {
+          window.scrollBy({ top: 1, behavior: 'smooth' });
+          if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+            clearInterval(scrollInterval);
+            scrollInterval = null;
+            btn.classList.remove('active');
+          }
+        }, 50);
+      }
+    }
+
+    // Initialize first piece
+    loadSong(0);
+  </script>
+</body>
+</html>
